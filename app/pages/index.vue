@@ -16,6 +16,21 @@
     middleware: 'auth'
   })
 
+  const user = ref<any>(null)
+  const showScanner = ref(false)
+  const scannedValue = ref ('')
+
+  onMounted(() => {
+    const savedUser = localStorage.getItem('google_user')
+
+    if (!savedUser) {
+      navigateTo('/login')
+      return
+    }
+
+    user.value = JSON.parse(savedUser)
+  })
+
 
   const logout = () => {
     localStorage.removeItem('google_user')
