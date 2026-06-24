@@ -31,6 +31,8 @@
 </template>
 
 <script lang="ts" setup>
+
+
 //@ts-nocheck
 const config = useRuntimeConfig()
 
