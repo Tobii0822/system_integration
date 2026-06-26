@@ -7,16 +7,40 @@
     <h1>Welcome!</h1>
     <h2>{{ user?.name }}</h2>
     <h3>{{ user?.email }}</h3>
-    <v-btn>Submit</v-btn>
+    <v-btn style="margin: 10px;">Submit</v-btn>
     
 
     <v-btn @click="logout">Logout</v-btn>
+
+       <v-btn to="/qrscanner" class="btn" 
+   style=
+   "text-align: center;
+    margin: 20px;
+    "
+   >
+    QRScanner
+</v-btn>
+  
+
+   <v-btn to="/leaflet" class="btn"
+   style=
+   "text-align: center;"
+   >
+    Map
+</v-btn>
+
+
+
   </div>
+
+
 
 
 </template>
 
 <script lang="ts" setup>
+
+
 // @ts-nocheck
   definePageMeta({
     middleware: 'auth'
