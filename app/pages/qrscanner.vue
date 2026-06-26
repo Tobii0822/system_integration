@@ -5,30 +5,23 @@ const scannedText = ref('')
 let html5QrCode: any = null
 
 onMounted(async () => {
-  if (process.client) {
-    const { Html5Qrcode } = await import('html5-qrcode')
+  const { Html5Qrcode } = await import('html5-qrcode')
 
-    html5QrCode = new Html5Qrcode('reader')
+  html5QrCode = new Html5Qrcode('reader')
 
-    try {
-      await html5QrCode.start(
-        { facingMode: 'environment' }, // back camera
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 }
-        },
-        (decodedText: string) => {
-          scannedText.value = decodedText
-          console.log('QR Code:', decodedText)
-        },
-        (errorMessage: string) => {
-          // ignore scan errors
-        }
-      )
-    } catch (err) {
-      console.error(err)
-      alert('Camera access failed')
-    }
+  try {
+    await html5QrCode.start(
+      { facingMode: 'environment' },
+      {
+        fps: 10,
+        qrbox: { width: 250, height: 250 }
+      },
+      (decodedText: string) => {
+        scannedText.value = decodedText
+      }
+    )
+  } catch (err) {
+    console.error(err)
   }
 })
 
