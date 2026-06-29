@@ -29,6 +29,13 @@
     Map
 </v-btn>
 
+<v-btn to="/weatherapp" class="btn"
+   style=
+   "text-align: center;"
+   >
+    Weather App
+</v-btn>
+
 
 
   </div>
