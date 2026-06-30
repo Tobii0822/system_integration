@@ -29,7 +29,7 @@
     Map
 </v-btn>
 
-<v-btn to="/weatherapp" class="btn"
+<v-btn to="/weather" class="btn"
    style=
    "text-align: center;"
    >
