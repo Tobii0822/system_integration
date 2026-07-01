@@ -1,167 +1,112 @@
 <template>
-  <div class="min-h-screen bg-[url('/images/img.jpg')] bg-cover bg-center bg-no-repeat flex items-center justify-center p-4">
-    <div
-      class="w-full max-w-md rounded-3xl shadow-xl p-6 bg-cover bg-center"
-      style="background-image: url('/images/bgimg.jpg');"
-    >
-      <h1 class="text-3xl font-bold text-center mb-6">
-        🌤 Weather App
-      </h1>
+  <div class="min-h-screen flex flex-col items-center justify-center bg-sky-100 p-6">
 
-      <div v-if="loading" class="text-center py-10">
-        Loading...
+    <h1 class="text-xl sm:text-2xl font-bold mb-6">
+      Weather App
+    </h1>
+
+    <div v-if="loading">
+      Loading...
+    </div>
+
+    <div v-if="weather && !loading" class="text-center w-full">
+
+      <!-- CURRENT WEATHER -->
+      <div class="text-6xl sm:text-7xl mb-2">
+        {{ weatherEmoji }}
       </div>
 
-      <div v-if="weather && !loading">
+      <div class="text-4xl sm:text-5xl font-bold">
+        {{ weather.current.temp_c }}°C
+      </div>
 
-        <div class="text-center">
+      <div class="text-lg sm:text-xl text-gray-700 mt-1">
+        {{ location }}
+      </div>
 
-          <div class="text-6xl mb-2">
-            {{ weatherEmoji }}
-          </div>
+      <div class="text-gray-600 mb-6">
+        {{ weather.current.condition.text }}
+      </div>
 
-          <div class="text-5xl font-bold">
-            {{ weather.current.temperature_2m }}°C
-          </div>
+      <!-- FUTURE WEATHER -->
+      <h2 class="font-bold text-lg mb-3">
+        Next Hours
+      </h2>
 
-          <div class="text-xl font-semibold mt-2">
-            {{ location }}
-          </div>
-
-          <div class="text-gray-500">
-            {{ weatherDescription }}
-          </div>
-
-        </div>
-
-        <hr class="my-6">
-
-        <h2 class="font-bold text-lg mb-3">
-          Tomorrow
-        </h2>
-
-        <div class="bg-sky-50 rounded-xl p-4">
-          <div class="flex justify-between">
-            <span>High</span>
-            <span>{{ weather.daily.temperature_2m_max[1] }}°C</span>
-          </div>
-
-          <div class="flex justify-between mt-2">
-            <span>Low</span>
-            <span>{{ weather.daily.temperature_2m_min[1] }}°C</span>
-          </div>
-        </div>
-
-        <hr class="my-6">
-
-        <h2 class="font-bold text-lg mb-4">
-          7-Day Forecast
-        </h2>
+      <div class="w-full max-w-2xl mx-auto space-y-2">
 
         <div
-          v-for="(day, index) in weather.daily.time"
-          :key="day"
-          class="flex justify-between py-2 border-b"
+          v-for="(hour, index) in futureHours"
+          :key="index"
+          class="flex justify-between border-b py-2 text-sm sm:text-base"
         >
-          <span>{{ formatDate(day) }}</span>
-
-          <span>
-            {{ weather.daily.temperature_2m_max[index] }}°
-            /
-            {{ weather.daily.temperature_2m_min[index] }}°
-          </span>
+          <span>{{ formatHour(hour.time) }}</span>
+          <span>{{ hour.temp_c }}°C</span>
         </div>
 
       </div>
 
     </div>
+
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue"
 
-const location = ref("Manila")
 const weather = ref<any>(null)
+const location = ref("")
 const loading = ref(false)
 
-const weatherDescription = computed(() => {
-  const code = weather.value?.current.weather_code
+const API_KEY = "20db62de8d274a0f85232651262906"
 
-  const map: Record<number, string> = {
-    0: "Clear Sky",
-    1: "Mainly Clear",
-    2: "Partly Cloudy",
-    3: "Cloudy",
-    45: "Fog",
-    48: "Fog",
-    51: "Drizzle",
-    61: "Rain",
-    63: "Rain",
-    65: "Heavy Rain",
-    71: "Snow",
-    80: "Rain Showers",
-    95: "Thunderstorm"
-  }
-
-  return map[code] || "Unknown"
-})
-
+// Emoji
 const weatherEmoji = computed(() => {
-  const code = weather.value?.current.weather_code
+  const text = weather.value?.current?.condition?.text?.toLowerCase() || ""
 
-  if (code === 0) return "☀️"
-  if (code <= 3) return "⛅"
-  if (code <= 55) return "🌫️"
-  if (code <= 67) return "🌧️"
-  if (code <= 77) return "❄️"
-  if (code <= 82) return "🌦️"
-  if (code >= 95) return "⛈️"
+  if (text.includes("sun")) return "☀️"
+  if (text.includes("cloud")) return "⛅"
+  if (text.includes("rain")) return "🌧️"
+  if (text.includes("storm")) return "⛈️"
+  if (text.includes("snow")) return "❄️"
 
   return "☁️"
 })
 
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString("en-US", {
-    weekday: "short"
+// Future hours
+const futureHours = computed(() => {
+  return weather.value?.forecast?.forecastday?.[0]?.hour || []
+})
+
+// Format time
+function formatHour(datetime: string) {
+  return new Date(datetime).toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit"
   })
 }
 
-async function searchWeather() {
+async function loadWeather() {
   loading.value = true
 
-  try {
-    const geo = await fetch(
-      "https://geocoding-api.open-meteo.com/v1/search?name=Manila&count=1"
-    ).then(r => r.json())
+  const res = await fetch(
+    `https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=Manila&days=1&aqi=no&alerts=no`
+  )
 
-    if (!geo.results?.length) {
-      alert("City not found")
-      loading.value = false
-      return
-    }
+  const data = await res.json()
 
-    const place = geo.results[0]
-    location.value = place.name
-
-    const data = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${place.latitude}&longitude=${place.longitude}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto`
-    ).then(r => r.json())
-
-    weather.value = data
-  } catch (e) {
-    alert("Unable to load weather.")
-  }
+  location.value = `${data.location.name}, ${data.location.country}`
+  weather.value = data
 
   loading.value = false
 }
 
-onMounted(searchWeather)
+onMounted(loadWeather)
 </script>
 
 <style>
 body {
   margin: 0;
-  font-family: Inter, Arial, sans-serif;
+  font-family: Arial, sans-serif;
 }
 </style>
