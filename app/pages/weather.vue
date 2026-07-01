@@ -1,251 +1,189 @@
-```vue
 <template>
-  <div class="weather-page">
-    <!-- Background Overlay -->
-    <div class="overlay"></div>
+  <div class="min-h-screen bg-[url('/images/img.jpg')] bg-cover bg-center bg-no-repeat flex items-center justify-center p-4">
+    <div class="w-full max-w-md rounded-3xl shadow-xl p-6 bg-cover bg-center"
+      style="background-image: url('/images/bgimg.jpg');">
 
-    <div class="container">
-      <!-- Main Weather Card -->
-      <div class="weather-card">
-        <div class="weather-content">
-          <div class="left">
-            <p class="country">
-              📍 {{ currentWeather?.location?.country }}
-            </p>
+      <h1 class="text-3xl font-bold text-center mb-6">
+        🌤 Weather App
+      </h1>
 
-            <h1 class="city">
-              {{ currentWeather?.location?.name }}
-            </h1>
+      <div class="flex gap-2 mb-6">
+        <input
+          v-model="city"
+          @keyup.enter="searchWeather"
+          placeholder="Search city..."
+          class="flex-1 border rounded-xl px-4 py-3 outline-none"
+        />
 
-            <div class="temperature">
-              {{ currentWeather?.current?.temp_c }}°
-            </div>
-
-            <p class="condition">
-              {{ currentWeather?.current?.condition?.text }}
-            </p>
-
-            <p class="feels">
-              Feels like {{ currentWeather?.current?.feelslike_c }}°
-            </p>
-
-            <v-btn
-              class="weather-btn"
-              @click="getWeatherData"
-            >
-              Refresh Weather
-            </v-btn>
-          </div>
-
-          <!-- Weather Icon -->
-          <div class="right">
-            <img
-              :src="currentWeather?.current?.condition?.icon"
-              alt="weather icon"
-              class="weather-icon"
-            />
-          </div>
-        </div>
-
-        <!-- Bottom Stats -->
-        <div class="stats">
-          <div class="stat-box">
-            <span>💧 Humidity</span>
-            <h3>{{ currentWeather?.current?.humidity }}%</h3>
-          </div>
-
-          <div class="stat-box">
-            <span>🌬 Wind</span>
-            <h3>{{ currentWeather?.current?.wind_kph }} km/h</h3>
-          </div>
-
-          <div class="stat-box">
-            <span>🧭 Direction</span>
-            <h3>{{ currentWeather?.current?.wind_dir }}</h3>
-          </div>
-
-          <div class="stat-box">
-            <span>☁ Cloud</span>
-            <h3>{{ currentWeather?.current?.cloud }}%</h3>
-          </div>
-        </div>
+        <button
+          @click="searchWeather"
+          class="bg-sky-500 text-white px-4 rounded-xl hover:bg-sky-600"
+        >
+          Search
+        </button>
       </div>
+
+      <div v-if="loading" class="text-center py-10">
+        Loading...
+      </div>
+
+      <div v-if="weather && !loading">
+
+        <div class="text-center">
+
+          <div class="text-6xl mb-2">
+            {{ weatherEmoji }}
+          </div>
+
+          <div class="text-5xl font-bold">
+            {{ weather.current.temperature_2m }}°C
+          </div>
+
+          <div class="text-xl font-semibold mt-2">
+            {{ location }}
+          </div>
+
+          <div class="text-gray-500">
+            {{ weatherDescription }}
+          </div>
+
+        </div>
+
+        <hr class="my-6">
+
+        <h2 class="font-bold text-lg mb-3">
+          Tomorrow
+        </h2>
+
+        <div class="bg-sky-50 rounded-xl p-4">
+          <div class="flex justify-between">
+            <span>High</span>
+            <span>{{ weather.daily.temperature_2m_max[1] }}°C</span>
+          </div>
+
+          <div class="flex justify-between mt-2">
+            <span>Low</span>
+            <span>{{ weather.daily.temperature_2m_min[1] }}°C</span>
+          </div>
+        </div>
+
+        <hr class="my-6">
+
+        <h2 class="font-bold text-lg mb-4">
+          7-Day Forecast
+        </h2>
+
+        <div
+          v-for="(day,index) in weather.daily.time"
+          :key="day"
+          class="flex justify-between py-2 border-b"
+        >
+          <span>
+            {{ formatDate(day) }}
+          </span>
+
+          <span>
+            {{ weather.daily.temperature_2m_max[index] }}°
+            /
+            {{ weather.daily.temperature_2m_min[index] }}°
+          </span>
+        </div>
+
+      </div>
+
     </div>
   </div>
 </template>
 
-<script lang="ts" setup>
-// @ts-nocheck
+<script setup lang="ts">
+import { ref, computed, onMounted } from "vue"
 
-definePageMeta({
-  layout: 'weather',
-  middleware: 'auth'
+const city = ref("Manila")
+const location = ref("Manila")
+const weather = ref<any>(null)
+const loading = ref(false)
+
+const weatherDescription = computed(() => {
+  const code = weather.value?.current.weather_code
+
+  const map: Record<number,string> = {
+    0:"Clear Sky",
+    1:"Mainly Clear",
+    2:"Partly Cloudy",
+    3:"Cloudy",
+    45:"Fog",
+    48:"Fog",
+    51:"Drizzle",
+    61:"Rain",
+    63:"Rain",
+    65:"Heavy Rain",
+    71:"Snow",
+    80:"Rain Showers",
+    95:"Thunderstorm"
+  }
+
+  return map[code] || "Unknown"
 })
 
-const currentWeather = ref(null)
+const weatherEmoji = computed(() => {
+  const code = weather.value?.current.weather_code
 
-const getWeatherData = async () => {
-  try {
-    const data = await $fetch(
-      'http://api.weatherapi.com/v1/current.json?key=20db62de8d274a0f85232651262906&q=manila&aqi=no'
-    )
+  if(code===0) return "☀️"
+  if(code<=3) return "⛅"
+  if(code<=55) return "🌫️"
+  if(code<=67) return "🌧️"
+  if(code<=77) return "❄️"
+  if(code<=82) return "🌦️"
+  if(code>=95) return "⛈️"
 
-    currentWeather.value = data
-  } catch (error) {
-    console.error('Failed to fetch', error)
-  }
+  return "☁️"
+})
+
+function formatDate(date:string){
+  return new Date(date).toLocaleDateString("en-US",{
+    weekday:"short"
+  })
 }
 
-onMounted(getWeatherData)
+async function searchWeather(){
+
+  loading.value=true
+
+  try{
+
+    const geo = await fetch(
+      `https://geocoding-api.open-meteo.com/v1/search?name=${city.value}&count=1`
+    ).then(r=>r.json())
+
+    if(!geo.results?.length){
+      alert("City not found")
+      loading.value=false
+      return
+    }
+
+    const place=geo.results[0]
+
+    location.value=place.name
+
+    const data=await fetch(
+`https://api.open-meteo.com/v1/forecast?latitude=${place.latitude}&longitude=${place.longitude}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto`
+    ).then(r=>r.json())
+
+    weather.value=data
+
+  }catch(e){
+    alert("Unable to load weather.")
+  }
+
+  loading.value=false
+}
+
+onMounted(searchWeather)
 </script>
 
-<style scoped>
-.weather-page {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #0f172a, #2563eb);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 40px 20px;
-  position: relative;
-  overflow: hidden;
-}
-
-.overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-}
-
-.container {
-  width: 100%;
-  max-width: 1200px;
-  position: relative;
-  z-index: 2;
-}
-
-.weather-card {
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 30px;
-  padding: 40px;
-  backdrop-filter: blur(20px);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-  color: white;
-}
-
-.weather-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-
-.left {
-  flex: 1;
-}
-
-.country {
-  font-size: 18px;
-  opacity: 0.9;
-  margin-bottom: 10px;
-}
-
-.city {
-  font-size: 64px;
-  font-weight: 700;
-  margin-bottom: 10px;
-}
-
-.temperature {
-  font-size: 120px;
-  font-weight: bold;
-  line-height: 1;
-}
-
-.condition {
-  font-size: 28px;
-  margin-top: 10px;
-  font-weight: 500;
-}
-
-.feels {
-  font-size: 18px;
-  opacity: 0.8;
-  margin-top: 10px;
-}
-
-.weather-btn {
-  margin-top: 30px;
-  background: white !important;
-  color: #2563eb !important;
-  font-weight: bold;
-  border-radius: 12px !important;
-  padding: 0 24px !important;
-  height: 50px !important;
-}
-
-.right {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.weather-icon {
-  width: 220px;
-  height: 220px;
-}
-
-.stats {
-  margin-top: 40px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 20px;
-}
-
-.stat-box {
-  background: rgba(255, 255, 255, 0.15);
-  padding: 24px;
-  border-radius: 20px;
-  text-align: center;
-  backdrop-filter: blur(10px);
-}
-
-.stat-box span {
-  display: block;
-  font-size: 16px;
-  margin-bottom: 10px;
-  opacity: 0.9;
-}
-
-.stat-box h3 {
-  font-size: 30px;
-  font-weight: bold;
-}
-
-@media (max-width: 768px) {
-  .weather-card {
-    padding: 24px;
-  }
-
-  .city {
-    font-size: 42px;
-  }
-
-  .temperature {
-    font-size: 80px;
-  }
-
-  .weather-icon {
-    width: 140px;
-    height: 140px;
-  }
-
-  .weather-content {
-    flex-direction: column;
-    text-align: center;
-  }
+<style>
+body{
+  margin:0;
+  font-family:Inter,Arial,sans-serif;
 }
 </style>
-```

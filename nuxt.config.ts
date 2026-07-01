@@ -7,8 +7,6 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
 
-  
-
   css: [
     'leaflet/dist/leaflet.css',
 
@@ -17,7 +15,7 @@ export default defineNuxtConfig({
   build: {
     transpile: ['vuetify'],
   },
-  
+
   vite: {
     plugins: [
       
@@ -30,8 +28,6 @@ export default defineNuxtConfig({
     },
   },
 
-
-
   runtimeConfig: {
     public: {
       //@ts-ignore
@@ -39,13 +35,7 @@ export default defineNuxtConfig({
 
       
     }
-  }
+  },
 
-  
-
-
-  
-
+  modules: ['@nuxtjs/tailwindcss']
 })
-
-
